@@ -54,31 +54,28 @@ export const getUsers = async (
 export const getUserByUserId = async (
   userId: string
 ): Promise<User | undefined> => {
-  const [user] = await pool.query<RowDataPacket[]>(
-    "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = ?",
-    [userId]
-  );
-  if (user.length === 0) {
+  const query = `
+    SELECT u.user_id, u.user_name, o.office_name, f.file_name 
+    FROM user AS u
+    JOIN office AS o ON u.office_id = o.office_id
+    JOIN file AS f ON u.user_icon_id = f.file_id
+    WHERE u.user_id = ?
+  `;
+  const [rows] = await pool.query<RowDataPacket[]>(query, [userId]);
+
+  if (rows.length === 0) {
     return;
   }
 
-  const [office] = await pool.query<RowDataPacket[]>(
-    `SELECT office_name FROM office WHERE office_id = ?`,
-    [user[0].office_id]
-  );
-  const [file] = await pool.query<RowDataPacket[]>(
-    `SELECT file_name FROM file WHERE file_id = ?`,
-    [user[0].user_icon_id]
-  );
-
+  const userRow = rows[0];
   return {
-    userId: user[0].user_id,
-    userName: user[0].user_name,
+    userId: userRow.user_id,
+    userName: userRow.user_name,
     userIcon: {
-      fileId: user[0].user_icon_id,
-      fileName: file[0].file_name,
+      fileId: userRow.user_icon_id,
+      fileName: userRow.file_name,
     },
-    officeName: office[0].office_name,
+    officeName: userRow.office_name,
   };
 };
 
