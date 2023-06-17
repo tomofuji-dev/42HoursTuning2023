@@ -2,6 +2,7 @@
 ALTER TABLE `user` ADD INDEX `idx_mail` (`mail`);
 ALTER TABLE `user` ADD INDEX `idx_user_name` (`user_name`);
 ALTER TABLE `user` ADD INDEX `idx_kana` (`kana`);
+ALTER TABLE `user` ADD INDEX `idx_mail` (`goal`);
 ALTER TABLE `user` ADD INDEX `idx_office_id` (`office_id`);
 ALTER TABLE `user` ADD INDEX `idx_user_icon_id` (`user_icon_id`);
 
