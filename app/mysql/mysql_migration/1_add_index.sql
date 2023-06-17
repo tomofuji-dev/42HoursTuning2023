@@ -1,7 +1,7 @@
 -- userテーブル
 ALTER TABLE `user` ADD INDEX `idx_mail` (`mail`);
 ALTER TABLE `user` ADD INDEX `idx_user_name` (`user_name`);
--- ALTER TABLE `user` ADD INDEX `idx_goal` (`goal`);
+ALTER TABLE `user` ADD INDEX `idx_goal` (`goal`(100));
 ALTER TABLE `user` ADD INDEX `idx_entry_date` (`entry_date`);
 ALTER TABLE `user` ADD INDEX `idx_kana` (`kana`);
 ALTER TABLE `user` ADD INDEX `idx_office_id` (`office_id`);
