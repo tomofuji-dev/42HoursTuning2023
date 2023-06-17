@@ -242,8 +242,9 @@ export const getUserForFilter = async (
 ): Promise<UserForFilter> => {
   let userRows: RowDataPacket[];
   if (!userId) {
-    const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM user");
-    const count = rows[0].count;
+    // const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM user");
+    // const count = rows[0].count;
+    const count = 300000;
     const randomRow = Math.floor(Math.random() * count);
     [userRows] = await pool.query<RowDataPacket[]>(
       "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
