@@ -134,7 +134,7 @@ export const getUsersByKana = async (kana: string): Promise<SearchedUser[]> => {
 export const getUsersByMail = async (mail: string): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT user_id FROM user WHERE mail LIKE ?`,
-    [`${mail}%`]
+    [`%${mail}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
 
@@ -230,7 +230,7 @@ export const getUsersBySkillName = async (
 export const getUsersByGoal = async (goal: string): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT user_id FROM user WHERE goal LIKE ?`,
-    [`${goal}%`]
+    [`%${goal}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
 
