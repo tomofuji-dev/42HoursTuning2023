@@ -1,5 +1,5 @@
 import express from "express";
-import { execSync } from "child_process";
+import fs from 'fs';
 import { getUsers } from "./repository";
 import { getUserByUserId } from "./repository";
 import { getFileByFileId } from "../files/repository";
@@ -29,10 +29,7 @@ usersRouter.get(
         return;
       }
       const path = userIcon.path;
-      // 500px x 500pxでリサイズ
-      const data = execSync(`convert ${path} -resize 500x500! PNG:-`, {
-        shell: "/bin/bash",
-      });
+      const data = fs.readFileSync(path);
       res.status(200).json({
         fileName: userIcon.fileName,
         data: data.toString("base64"),
