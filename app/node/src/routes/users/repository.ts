@@ -6,7 +6,6 @@ import {
   convertToUserForFilter,
   convertToUsers,
 } from "../../model/utils";
-import useCounter from "./usercount";
 
 export const getUserIdByMailAndPassword = async (
   mail: string,
@@ -243,7 +242,8 @@ export const getUserForFilter = async (
 ): Promise<UserForFilter> => {
   let userRows: RowDataPacket[];
   if (!userId) {
-    const count = await useCounter.getCount();
+    const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM user");
+    const count = rows[0].count;
     const randomRow = Math.floor(Math.random() * count);
     [userRows] = await pool.query<RowDataPacket[]>(
       "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
