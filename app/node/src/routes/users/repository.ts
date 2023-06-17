@@ -6,13 +6,14 @@ import {
   convertToUserForFilter,
   convertToUsers,
 } from "../../model/utils";
+import useCounter from "./usercount";
 
 export const getUserIdByMailAndPassword = async (
   mail: string,
   hashPassword: string
 ): Promise<string | undefined> => {
   const [user] = await pool.query<RowDataPacket[]>(
-    "SELECT user_id FROM user WHERE mail = ? AND password = ?",
+    "SELECT user_id FROM user WHERE mail = ? AND password = ? LIMIT 1",
     [mail, hashPassword]
   );
   if (user.length === 0) {
@@ -26,23 +27,27 @@ export const getUsers = async (
   limit: number,
   offset: number
 ): Promise<User[]> => {
-  const query = `SELECT user_id, user_name, office_id, user_icon_id FROM user ORDER BY entry_date ASC, kana ASC LIMIT ? OFFSET ?`;
-  const rows: RowDataPacket[] = [];
+  const query = `
+    SELECT 
+      user.user_id, 
+      user.user_name, 
+      user.office_id, 
+      user.user_icon_id, 
+      office.office_name, 
+      file.file_name
+    FROM 
+      user 
+    LEFT JOIN 
+      office ON user.office_id = office.office_id
+    LEFT JOIN 
+      file ON user.user_icon_id = file.file_id
+    ORDER BY 
+      user.entry_date ASC, 
+      user.kana ASC 
+    LIMIT ? OFFSET ?
+  `;
 
-  const [userRows] = await pool.query<RowDataPacket[]>(query, [limit, offset]);
-  for (const userRow of userRows) {
-    const [officeRows] = await pool.query<RowDataPacket[]>(
-      `SELECT office_name FROM office WHERE office_id = ?`,
-      [userRow.office_id]
-    );
-    const [fileRows] = await pool.query<RowDataPacket[]>(
-      `SELECT file_name FROM file WHERE file_id = ?`,
-      [userRow.user_icon_id]
-    );
-    userRow.office_name = officeRows[0].office_name;
-    userRow.file_name = fileRows[0].file_name;
-    rows.push(userRow);
-  }
+  const [rows] = await pool.query<RowDataPacket[]>(query, [limit, offset]);
 
   return convertToUsers(rows);
 };
@@ -50,31 +55,29 @@ export const getUsers = async (
 export const getUserByUserId = async (
   userId: string
 ): Promise<User | undefined> => {
-  const [user] = await pool.query<RowDataPacket[]>(
-    "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = ?",
-    [userId]
-  );
-  if (user.length === 0) {
+  const query = `
+    SELECT u.user_id, u.user_name, o.office_name, f.file_name 
+    FROM user AS u
+    JOIN office AS o ON u.office_id = o.office_id
+    JOIN file AS f ON u.user_icon_id = f.file_id
+    WHERE u.user_id = ?
+    LIMIT 1
+  `;
+  const [rows] = await pool.query<RowDataPacket[]>(query, [userId]);
+
+  if (rows.length === 0) {
     return;
   }
 
-  const [office] = await pool.query<RowDataPacket[]>(
-    `SELECT office_name FROM office WHERE office_id = ?`,
-    [user[0].office_id]
-  );
-  const [file] = await pool.query<RowDataPacket[]>(
-    `SELECT file_name FROM file WHERE file_id = ?`,
-    [user[0].user_icon_id]
-  );
-
+  const userRow = rows[0];
   return {
-    userId: user[0].user_id,
-    userName: user[0].user_name,
+    userId: userRow.user_id,
+    userName: userRow.user_name,
     userIcon: {
-      fileId: user[0].user_icon_id,
-      fileName: file[0].file_name,
+      fileId: userRow.user_icon_id,
+      fileName: userRow.file_name,
     },
-    officeName: office[0].office_name,
+    officeName: userRow.office_name,
   };
 };
 
@@ -84,7 +87,7 @@ export const getUsersByUserIds = async (
   let users: SearchedUser[] = [];
   for (const userId of userIds) {
     const [userRows] = await pool.query<RowDataPacket[]>(
-      "SELECT user_id, user_name, kana, entry_date, office_id, user_icon_id FROM user WHERE user_id = ?",
+      "SELECT user_id, user_name, kana, entry_date, office_id, user_icon_id FROM user WHERE user_id = ? LIMIT 1",
       [userId]
     );
     if (userRows.length === 0) {
@@ -92,11 +95,11 @@ export const getUsersByUserIds = async (
     }
 
     const [officeRows] = await pool.query<RowDataPacket[]>(
-      `SELECT office_name FROM office WHERE office_id = ?`,
+      `SELECT office_name FROM office WHERE office_id = ? LIMIT 1`,
       [userRows[0].office_id]
     );
     const [fileRows] = await pool.query<RowDataPacket[]>(
-      `SELECT file_name FROM file WHERE file_id = ?`,
+      `SELECT file_name FROM file WHERE file_id = ? LIMIT 1`,
       [userRows[0].user_icon_id]
     );
     userRows[0].office_name = officeRows[0].office_name;
@@ -240,27 +243,30 @@ export const getUserForFilter = async (
 ): Promise<UserForFilter> => {
   let userRows: RowDataPacket[];
   if (!userId) {
+    const count = await useCounter.getCount();
+    const randomRow = Math.floor(Math.random() * count);
     [userRows] = await pool.query<RowDataPacket[]>(
-      "SELECT user_id, user_name, office_id, user_icon_id FROM user ORDER BY RAND() LIMIT 1"
+      "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
+      [randomRow]
     );
   } else {
     [userRows] = await pool.query<RowDataPacket[]>(
-      "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = ?",
+      "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = ? LIMIT 1",
       [userId]
     );
   }
   const user = userRows[0];
 
   const [officeNameRow] = await pool.query<RowDataPacket[]>(
-    `SELECT office_name FROM office WHERE office_id = ?`,
+    `SELECT office_name FROM office WHERE office_id = ? LIMIT 1`,
     [user.office_id]
   );
   const [fileNameRow] = await pool.query<RowDataPacket[]>(
-    `SELECT file_name FROM file WHERE file_id = ?`,
+    `SELECT file_name FROM file WHERE file_id = ? LIMIT 1`,
     [user.user_icon_id]
   );
   const [departmentNameRow] = await pool.query<RowDataPacket[]>(
-    `SELECT department_name FROM department WHERE department_id = (SELECT department_id FROM department_role_member WHERE user_id = ? AND belong = true)`,
+    `SELECT department_name FROM department WHERE department_id = (SELECT department_id FROM department_role_member WHERE user_id = ? AND belong = true) LIMIT 1`,
     [user.user_id]
   );
   const [skillNameRows] = await pool.query<RowDataPacket[]>(
