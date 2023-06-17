@@ -12,7 +12,7 @@ export const getUserIdByMailAndPassword = async (
   hashPassword: string
 ): Promise<string | undefined> => {
   const [user] = await pool.query<RowDataPacket[]>(
-    "SELECT user_id FROM user WHERE mail = ? AND password = ?",
+    "SELECT user_id FROM user WHERE mail = ? AND password = ? LIMIT 1",
     [mail, hashPassword]
   );
   if (user.length === 0) {
@@ -60,6 +60,7 @@ export const getUserByUserId = async (
     JOIN office AS o ON u.office_id = o.office_id
     JOIN file AS f ON u.user_icon_id = f.file_id
     WHERE u.user_id = ?
+    LIMIT 1
   `;
   const [rows] = await pool.query<RowDataPacket[]>(query, [userId]);
 
@@ -85,7 +86,7 @@ export const getUsersByUserIds = async (
   let users: SearchedUser[] = [];
   for (const userId of userIds) {
     const [userRows] = await pool.query<RowDataPacket[]>(
-      "SELECT user_id, user_name, kana, entry_date, office_id, user_icon_id FROM user WHERE user_id = ?",
+      "SELECT user_id, user_name, kana, entry_date, office_id, user_icon_id FROM user WHERE user_id = ? LIMIT 1",
       [userId]
     );
     if (userRows.length === 0) {
@@ -93,11 +94,11 @@ export const getUsersByUserIds = async (
     }
 
     const [officeRows] = await pool.query<RowDataPacket[]>(
-      `SELECT office_name FROM office WHERE office_id = ?`,
+      `SELECT office_name FROM office WHERE office_id = ? LIMIT 1`,
       [userRows[0].office_id]
     );
     const [fileRows] = await pool.query<RowDataPacket[]>(
-      `SELECT file_name FROM file WHERE file_id = ?`,
+      `SELECT file_name FROM file WHERE file_id = ? LIMIT 1`,
       [userRows[0].user_icon_id]
     );
     userRows[0].office_name = officeRows[0].office_name;
