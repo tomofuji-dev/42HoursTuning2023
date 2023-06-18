@@ -249,7 +249,7 @@ export const getUserForFilter = async (
     const count = 300000;
     const randomRow = Math.floor(Math.random() * count);
     [userRows] = await pool.query<RowDataPacket[]>(
-      "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
+      "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = (SELECT user_id FROM user LIMIT 1 OFFSET ?);",
       [randomRow]
     );
   } else {
