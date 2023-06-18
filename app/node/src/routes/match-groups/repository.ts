@@ -1,6 +1,6 @@
 import { RowDataPacket } from "mysql2";
 import pool from "../../util/mysql";
-import { MatchGroup, MatchGroupDetail, User } from "../../model/types";
+import { MatchGroup, MatchGroupDetail } from "../../model/types";
 import { getUsersByUserIds } from "../users/repository";
 import { convertToMatchGroupDetail } from "../../model/utils";
 
@@ -75,12 +75,7 @@ export const getMatchGroupDetailByMatchGroupId = async (
     (row) => row.user_id
   );
 
-  const searchedUsers = await getUsersByUserIds(matchGroupMemberIds);
-  // SearchedUserからUser型に変換
-  const members: User[] = searchedUsers.map((searchedUser) => {
-    const { kana: _kana, entryDate: _entryDate, ...rest } = searchedUser;
-    return rest;
-  });
+  const members = await getUsersByUserIds(matchGroupMemberIds);
   matchGroup[0].members = members;
 
   return convertToMatchGroupDetail(matchGroup[0]);
@@ -100,17 +95,12 @@ export const getMatchGroupsByMatchGroupIds = async (
   matchGroupIds: string[],
   status: string
 ): Promise<MatchGroup[]> => {
-  let matchGroups: MatchGroup[] = [];
-  for (const matchGroupId of matchGroupIds) {
-    const matchGroupDetail = await getMatchGroupDetailByMatchGroupId(
-      matchGroupId,
-      status
-    );
-    if (matchGroupDetail) {
-      const { description: _description, ...matchGroup } = matchGroupDetail;
-      matchGroups = matchGroups.concat(matchGroup);
-    }
-  }
+  const matchGroupDetails = await Promise.all(matchGroupIds.map(matchGroupId => getMatchGroupDetailByMatchGroupId(matchGroupId, status)));
+  
+  let matchGroups: MatchGroup[] = matchGroupDetails.filter(Boolean).map(detail => {
+    const { description: _description, ...matchGroup } = detail!;
+    return matchGroup;
+  });
 
   return matchGroups;
 };
