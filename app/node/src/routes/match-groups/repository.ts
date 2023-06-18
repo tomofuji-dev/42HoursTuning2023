@@ -8,7 +8,7 @@ export const hasSkillNameRecord = async (
   skillName: string
 ): Promise<boolean> => {
   const [rows] = await pool.query<RowDataPacket[]>(
-    "SELECT * FROM skill WHERE EXISTS (SELECT * FROM skill WHERE skill_name = ?)",
+    "SELECT * FROM skill WHERE skill_name = ? LIMIT 1",
     [skillName]
   );
   return rows.length > 0;
@@ -17,17 +17,15 @@ export const hasSkillNameRecord = async (
 export const getUserIdsBeforeMatched = async (
   userId: string
 ): Promise<string[]> => {
-  const [matchGroupIdRows] = await pool.query<RowDataPacket[]>(
-    "SELECT match_group_id FROM match_group_member WHERE user_id = ?",
-    [userId]
-  );
-  if (matchGroupIdRows.length === 0) {
-    return [];
-  }
-
   const [userIdRows] = await pool.query<RowDataPacket[]>(
-    "SELECT user_id FROM match_group_member WHERE match_group_id IN (?)",
-    [matchGroupIdRows]
+    `
+    SELECT m2.user_id
+    FROM match_group_member m1
+    JOIN match_group_member m2 ON m1.match_group_id = m2.match_group_id
+    WHERE m1.user_id = ?
+    AND m2.user_id != ?
+    `,
+    [userId, userId]
   );
 
   return userIdRows.map((row) => row.user_id);
@@ -46,12 +44,13 @@ export const insertMatchGroup = async (matchGroupDetail: MatchGroupDetail) => {
     ]
   );
 
-  for (const member of matchGroupDetail.members) {
-    await pool.query<RowDataPacket[]>(
-      "INSERT INTO match_group_member (match_group_id, user_id) VALUES (?, ?)",
-      [matchGroupDetail.matchGroupId, member.userId]
-    );
-  }
+  const memberInsertValues = matchGroupDetail.members.map((member) => {
+    return `(${pool.escape(matchGroupDetail.matchGroupId)}, ${pool.escape(member.userId)})`;
+  }).join(', ');
+
+  await pool.query<RowDataPacket[]>(
+    `INSERT INTO match_group_member (match_group_id, user_id) VALUES ${memberInsertValues}`
+  );
 };
 
 export const getMatchGroupDetailByMatchGroupId = async (

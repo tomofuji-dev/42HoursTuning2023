@@ -114,7 +114,7 @@ export const getUsersByUserName = async (
 ): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT user_id FROM user WHERE user_name LIKE ?`,
-    [`%${userName}%`]
+    [`${userName}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
 
@@ -124,7 +124,7 @@ export const getUsersByUserName = async (
 export const getUsersByKana = async (kana: string): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT user_id FROM user WHERE kana LIKE ?`,
-    [`%${kana}%`]
+    [`${kana}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
 
@@ -146,7 +146,7 @@ export const getUsersByDepartmentName = async (
 ): Promise<SearchedUser[]> => {
   const [departmentIdRows] = await pool.query<RowDataPacket[]>(
     `SELECT department_id FROM department WHERE department_name LIKE ? AND active = true`,
-    [`%${departmentName}%`]
+    [`${departmentName}%`]
   );
   const departmentIds: string[] = departmentIdRows.map(
     (row) => row.department_id
@@ -169,7 +169,7 @@ export const getUsersByRoleName = async (
 ): Promise<SearchedUser[]> => {
   const [roleIdRows] = await pool.query<RowDataPacket[]>(
     `SELECT role_id FROM role WHERE role_name LIKE ? AND active = true`,
-    [`%${roleName}%`]
+    [`${roleName}%`]
   );
   const roleIds: string[] = roleIdRows.map((row) => row.role_id);
   if (roleIds.length === 0) {
@@ -190,7 +190,7 @@ export const getUsersByOfficeName = async (
 ): Promise<SearchedUser[]> => {
   const [officeIdRows] = await pool.query<RowDataPacket[]>(
     `SELECT office_id FROM office WHERE office_name LIKE ?`,
-    [`%${officeName}%`]
+    [`${officeName}%`]
   );
   const officeIds: string[] = officeIdRows.map((row) => row.office_id);
   if (officeIds.length === 0) {
@@ -211,7 +211,7 @@ export const getUsersBySkillName = async (
 ): Promise<SearchedUser[]> => {
   const [skillIdRows] = await pool.query<RowDataPacket[]>(
     `SELECT skill_id FROM skill WHERE skill_name LIKE ?`,
-    [`%${skillName}%`]
+    [`${skillName}%`]
   );
   const skillIds: string[] = skillIdRows.map((row) => row.skill_id);
   if (skillIds.length === 0) {
@@ -242,8 +242,9 @@ export const getUserForFilter = async (
 ): Promise<UserForFilter> => {
   let userRows: RowDataPacket[];
   if (!userId) {
-    const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM user");
-    const count = rows[0].count;
+    // const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM user");
+    // const count = rows[0].count;
+    const count = 300000;
     const randomRow = Math.floor(Math.random() * count);
     [userRows] = await pool.query<RowDataPacket[]>(
       "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
