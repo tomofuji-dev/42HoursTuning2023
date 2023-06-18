@@ -244,6 +244,8 @@ export const getUserForFilter = async (
   if (!userId) {
     // const [rows] = await pool.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM user");
     // const count = rows[0].count;
+    // todo: count tableを作成してそこから取得するようにする
+    // userを追加するエンドポイントがないため、offsetは300000まで
     const count = 300000;
     const randomRow = Math.floor(Math.random() * count);
     [userRows] = await pool.query<RowDataPacket[]>(
